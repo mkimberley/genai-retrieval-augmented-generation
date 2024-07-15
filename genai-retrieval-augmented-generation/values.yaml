@@ -55,10 +55,10 @@ ingress:
   tls: []
 
 envUniversal:
-  googleProject: openenv-m9v6p
+  googleProject: gcp-project
 
 envFrontend:
-  serviceAccountEmail: #Email address for the CloudSQL / VertexAI Service Account, e.g. genai-rag-run-sa-fbd8752f@openenv-gr8qf.iam.gserviceaccount.com
+  serviceAccountEmail: #Email address for the CloudSQL / VertexAI Service Account, e.g. genai-rag-run-sa-fbd8752f@gcp-projectid.iam.gserviceaccount.com
   serviceUrl: #End point address for the retrieval service, e.g. http://retrieval-service:8080
   orchestrationType: langchain-tools 
   debug: true
