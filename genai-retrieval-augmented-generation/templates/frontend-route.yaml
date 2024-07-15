@@ -1,0 +1,12 @@
+#Route for the frontend
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: frontend
+spec:
+  to:
+    kind: Service
+    name: {{ include "genai-retrieval-augmented-generation.fullname" . }}-frontend
+  port:
+    targetPort: http
+  wildcardPolicy: None

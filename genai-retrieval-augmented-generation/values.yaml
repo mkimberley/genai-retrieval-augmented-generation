@@ -1,0 +1,102 @@
+# Default values for genai-retrieval-augmented-generation.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+frontendImage:
+  repository: us-docker.pkg.dev/google-samples/containers/jss/rag-frontend-service
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "v0.0.1"
+
+retrievalImage:
+  repository: us-docker.pkg.dev/google-samples/containers/jss/rag-retrieval-service
+  pullPolicy: Always
+  tag: "v0.0.2"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+
+serviceFrontend:
+  type: NodePort
+  port: 8080
+
+serviceRetrieval:
+  type: NodePort
+  port: 80
+
+
+gcpSaName: genai-rag
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+envUniversal:
+  googleProject: openenv-m9v6p
+
+envFrontend:
+  serviceAccountEmail: #Email address for the CloudSQL / VertexAI Service Account, e.g. genai-rag-run-sa-fbd8752f@openenv-gr8qf.iam.gserviceaccount.com
+  serviceUrl: #End point address for the retrieval service, e.g. http://retrieval-service:8080
+  orchestrationType: langchain-tools 
+  debug: true
+
+envRetrieval:
+  containerPort: 80
+  appHost: 0.0.0.0
+  appPort: 8080
+  dbKind: cloudsql-postgres
+  dbRegion: europe-west2
+  dbInstance: your-db-instance
+  dbName: assistantdemo
+  dbUser: retrieval-service
+  dbPassword: your-password
+
+
+
+resources: 
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

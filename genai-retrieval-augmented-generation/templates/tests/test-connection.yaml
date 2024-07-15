@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "genai-retrieval-augmented-generation.fullname" . }}-test-connection"
+  labels:
+    {{- include "genai-retrieval-augmented-generation.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "genai-retrieval-augmented-generation.fullname" . }}:{{ .Values.serviceFrontend.port }}']
+  restartPolicy: Never

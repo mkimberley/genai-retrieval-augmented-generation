@@ -1,0 +1,95 @@
+#Deployment for frontend service which talks to the backend retrieval service and VertexAI. The frontend service uses the GCP service account to connect to VertexAI. The frontend service is exposed via a Route and a Service endpoint.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "genai-retrieval-augmented-generation.fullname" . }}-frontend
+  labels:
+    {{- include "genai-retrieval-augmented-generation.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "genai-retrieval-augmented-generation.selectorLabels" . | nindent 6 }}
+      {{- include "genai-retrieval-augmented-generation-frontend.selectorLabels" . | nindent 6 }}
+
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "genai-retrieval-augmented-generation-frontend.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "genai-retrieval-augmented-generation.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          volumeMounts:
+            - name: sa-secret-volume
+              mountPath: /etc/secrets
+              readOnly: true
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+#          image: "{{ .Values.frontendImage.repository }}:{{ .Values.frontendImage.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.frontendImage.repository }}:{{ .Values.frontendImage.tag | default .Chart.AppVersion }}"
+
+          imagePullPolicy: {{ .Values.frontendImage.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.serviceFrontend.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 240
+            failureThreshold: 1
+            successThreshold: 1
+            timeoutSeconds: 240  
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 5
+            failureThreshold: 1
+            successThreshold: 1
+            timeoutSeconds: 240  
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: SERVICE_URL
+              value: "{{ .Values.envFrontend.serviceUrl }}"
+            - name: SERVICE_ACCOUNT_EMAIL
+              value: "{{ .Values.envFrontend.serviceAccountEmail }}"
+            - name: ORCHESTRATION_TYPE
+              value:  "{{ .Values.envFrontend.orchestrationType }}"
+            - name: DEBUG
+              value: "{{ .Values.envFrontend.debug }}"
+            - name: GOOGLE_CLOUD_PROJECT
+              value: "{{ .Values.envUniversal.googleProject }}"
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/etc/secrets/service-account.json"
+      volumes:
+      - name: sa-secret-volume
+        secret:
+          secretName: {{ .Values.gcpSaName }}-secret    
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

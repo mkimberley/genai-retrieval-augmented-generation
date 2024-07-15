@@ -1,0 +1,103 @@
+#Deployment fo rthe retrieval service (backend that talks to CloudSQL and VertextAI)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "genai-retrieval-augmented-generation.fullname" . }}-retrieval
+  labels:
+    {{- include "genai-retrieval-augmented-generation-retrieval.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      #{{- include "genai-retrieval-augmented-generation.selectorLabels" . | nindent 6 }}
+      {{- include "genai-retrieval-augmented-generation-retrieval.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "genai-retrieval-augmented-generation-retrieval.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "genai-retrieval-augmented-generation.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          volumeMounts:
+            - name: sa-secret-retrieval-volume
+              mountPath: /etc/secrets
+              readOnly: true
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.retrievalImage.repository }}:{{ .Values.retrievalImage.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.retrievalImage.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.envRetrieval.appPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 240
+            failureThreshold: 1
+            successThreshold: 1
+            timeoutSeconds: 240  
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 5
+            failureThreshold: 1
+            successThreshold: 1
+            timeoutSeconds: 240  
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: APP_HOST
+              value: "{{ .Values.envRetrieval.appHost }}"
+#              #value: {{ include "genai-retrieval-augmented-generation.fullname" . }}-frontend
+            - name: APP_PORT
+              value: "{{ .Values.envRetrieval.appPort }}"
+            - name: DB_KIND
+              value: "{{ .Values.envRetrieval.dbKind }}"
+            - name: DB_PROJECT
+              value: "{{ .Values.envUniversal.googleProject }}"
+            - name: DB_REGION
+              value: "{{ .Values.envRetrieval.dbRegion }}"
+            - name: DB_INSTANCE
+              value: "{{ .Values.envRetrieval.dbInstance }}"
+            - name: DB_NAME
+              value: "{{ .Values.envRetrieval.dbName }}"
+            - name: DB_USER
+              value: "{{ .Values.envRetrieval.dbUser }}"
+            - name: DB_PASSWORD
+              value: "{{ .Values.envRetrieval.dbPassword }}"
+            - name: GOOGLE_CLOUD_PROJECT
+              value: "{{ .Values.envUniversal.googleProject }}"
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/etc/secrets/service-account.json"
+      volumes:
+      - name: sa-secret-retrieval-volume
+        secret:
+          secretName: {{ .Values.gcpSaName }}-retrieval-secret
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

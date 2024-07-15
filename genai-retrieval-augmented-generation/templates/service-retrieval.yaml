@@ -1,0 +1,16 @@
+#Service endpoint for the retrieval service
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "genai-retrieval-augmented-generation.fullname" . }}-retrieval
+  labels:
+    {{- include "genai-retrieval-augmented-generation-retrieval.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.serviceRetrieval.type }}
+  ports:
+    - port: {{ .Values.serviceRetrieval.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "genai-retrieval-augmented-generation-retrieval.selectorLabels" . | nindent 4 }}
