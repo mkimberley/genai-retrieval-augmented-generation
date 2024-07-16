@@ -35,13 +35,14 @@ export DB_PASSWORD=your-database-password
 Run:
 ```bash
 oc new-project $(echo $TEAM_NAME)
+oc project $(echo $TEAM_NAME) #incase team already exists in above step
 ```
 
 ```bash
 helm install rag-$(echo $TEAM_NAME) genai-retrieval-augmented-generation/ -f genai-retrieval-augmented-generation/values.yaml --set envFrontend.serviceAccountEmail=$SA_EMAIL \
 --set envFrontend.serviceUrl=$SVC_URL --set envRetrieval.dbRegion=$DB_REGION \
 --set envRetrieval.dbInstance=$DB_INSTANCE --set dbPassword=$DB_PASSWORD \
---set DB_USER=$DB_USER
+--set DB_USER=$DB_USER --set envUniversal.googleProject=$GOOGLE_PROJECT
 ```
 
 * Alternatively, create a values.yaml file for your environment.
